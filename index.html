@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BNDR LLC | Digital Build</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <style>
+        :root {
+            --color-sand: #F2E8CF;
+            --color-navy: #0A1128;
+            --color-terracotta: #D96C06;
+            --color-sage: #7A8B76;
+            
+            --spacing-base: 1rem;
+            --spacing-large: 8rem;
+            --spacing-huge: 16rem;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--color-sand);
+            color: var(--color-navy);
+            overflow-x: hidden;
+            overscroll-behavior: none;
+            transition: background-color 1.2s cubic-bezier(0.25, 1, 0.5, 1), color 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            font-size: 16px;
+        }
+
+        /* Custom Cursor */
+        .cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 8px; height: 8px;
+            background-color: var(--color-terracotta);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+
+        .cursor-ring {
+            position: fixed;
+            top: 0; left: 0;
+            width: 40px; height: 40px;
+            border: 1px solid var(--color-navy);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: border-color 1.2s ease;
+        }
+
+        /* Canvas Wrapper */
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: auto;
+        }
+
+        canvas {
+            display: block;
+            width: 100%; height: 100%;
+            outline: none;
+        }
+
+        /* Layout Structure */
+        main {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        section {
+            position: relative;
+            width: 100%;
+            pointer-events: auto;
+        }
+
+        /* Section 01: Silent Introduction */
+        .s-intro {
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding: var(--spacing-base);
+        }
+
+        .s-intro .text-block {
+            align-self: end;
+            max-width: 280px;
+            padding-bottom: var(--spacing-base);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2rem;
+            display: block;
+            opacity: 0.5;
+        }
+
+        /* Erase effect specific class */
+        .erasable-char {
+            display: inline-block;
+            position: relative;
+            pointer-events: none; 
+            white-space: pre; /* Force strict width for math calculation */
+        }
+
+        /* Section 02: Transition Zone */
+        .s-statement {
+            min-height: 120vh;
+            padding: var(--spacing-huge) var(--spacing-base);
+            display: flex;
+            align-items: center;
+        }
+
+        /* Section 03: Asymmetric Data */
+        .s-data {
+            min-height: 100vh;
+            padding: var(--spacing-huge) var(--spacing-base);
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--spacing-base);
+        }
+
+        .data-block-1 {
+            grid-column: 2 / 6;
+            font-size: 2rem;
+            line-height: 1.1;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .data-block-2 {
+            grid-column: 8 / 12;
+            align-self: end;
+            margin-top: var(--spacing-huge);
+            font-size: 1rem;
+            line-height: 1.6;
+            max-width: 320px;
+        }
+
+        /* Section 04: Real Contact - Production Grade Compression & Alignment */
+        .s-contact {
+            padding: 5rem 2rem 3rem; 
+            width: 100%;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            background: transparent;
+            position: relative;
+            z-index: 10;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 2fr 3fr 3fr 2fr; 
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .contact-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .c-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            opacity: 0.4;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .c-value {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            letter-spacing: 0.01em;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+            position: relative;
+        }
+
+        a::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            transform: scaleX(0);
+            height: 1px;
+            bottom: 0;
+            left: 0;
+            background-color: currentColor;
+            transform-origin: bottom right;
+            transition: transform 0.4s cubic-bezier(0.86, 0, 0.07, 1);
+        }
+
+        a:hover::after {
+            transform: scaleX(1);
+            transform-origin: bottom left;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .s-data {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-large);
+            }
+            .data-block-1, .data-block-2 {
+                grid-column: 1 / -1;
+            }
+            .data-block-2 {
+                margin-top: var(--spacing-base);
+            }
+            .contact-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 4rem 2rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+        }
+
+        /* Theme transition helper */
+        body.theme-dark {
+            background-color: var(--color-navy);
+            color: var(--color-sand);
+        }
+        body.theme-dark .cursor-ring {
+            border-color: var(--color-sand);
+        }
+        body.theme-dark .s-contact {
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-dot" id="cursor-dot"></div>
+    <div class="cursor-ring" id="cursor-ring"></div>
+
+    <div id="webgl-container"></div>
+
+    <main>
+        <section class="s-intro">
+            <!-- This text is tracked via strict mathematical bounds -->
+            <div class="text-block" id="intro-text">
+                <span class="label">BNDR LLC</span>
+                <p>Erase the shape. Move your mouse over the letters.</p>
+                <br>
+                <p>We build everything by hand. We write every line of code. This makes the work fast and exact.</p>
+            </div>
+        </section>
+
+        <!-- Triggers the morphing particle shape behind the scenes -->
+        <section class="s-statement" id="trigger-dark">
+            <!-- Blank intentional spacing -->
+        </section>
+
+        <section class="s-data">
+            <div class="data-block-1 gs-reveal">
+                Your site will load instantly. It will respond to input without delay. It will stand apart from the standard web.
+            </div>
+            <div class="data-block-2 gs-reveal">
+                We design digital objects that work correctly. Good work requires time and focus. We remove extra parts. We remove unneeded steps. You get exactly what you need.
+            </div>
+        </section>
+
+        <section class="s-contact">
+            <div class="contact-grid">
+                <div class="contact-col">
+                    <span class="c-label">Business</span>
+                    <span class="c-value">BNDR LLC<br>Website Development</span>
+                </div>
+                <div class="contact-col">
+                    <span class="c-label">Location</span>
+                    <span class="c-value">1896 East Innovation Park Drive<br>STE 100<br>Oro Valley, AZ 85755</span>
+                </div>
+                <div class="contact-col">
+                    <span class="c-label">Direct</span>
+                    <span class="c-value">
+                        <a href="mailto:bndr.labs@gmail.com">bndr.labs@gmail.com</a><br>
+                        <a href="https://bndrllc.com" target="_blank">bndrllc.com</a>
+                    </span>
+                </div>
+                <div class="contact-col">
+                    <span class="c-label">Legal</span>
+                    <span class="c-value">© 2026 BNDR LLC.<br>All rights reserved.</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Custom Cursor Logic
+        const cursorDot = document.getElementById('cursor-dot');
+        const cursorRing = document.getElementById('cursor-ring');
+        let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+        let ringX = mouseX, ringY = mouseY;
+        const erasableChars = [];
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorDot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+
+            // Flawless math-based eraser logic
+            if (mouseY < window.innerHeight) { 
+                const eraserRadius = 40; // Size of interaction
+                const radiusSq = eraserRadius * eraserRadius;
+
+                for (let i = 0; i < erasableChars.length; i++) {
+                    const span = erasableChars[i];
+                    if (span.dataset.erased) continue;
+
+                    const rect = span.getBoundingClientRect();
+                    
+                    // Fast AABB check to save performance
+                    if (mouseX < rect.left - eraserRadius || mouseX > rect.right + eraserRadius ||
+                        mouseY < rect.top - eraserRadius || mouseY > rect.bottom + eraserRadius) {
+                        continue;
+                    }
+
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    const dx = cx - mouseX;
+                    const dy = cy - mouseY;
+
+                    if (dx * dx + dy * dy < radiusSq) {
+                        span.dataset.erased = "true";
+                        gsap.to(span, { 
+                            opacity: 0, 
+                            filter: "blur(6px)", 
+                            y: -10,
+                            scale: 0.8,
+                            duration: 0.4, 
+                            ease: "power2.out",
+                            overwrite: true 
+                        });
+                    }
+                }
+            }
+        });
+
+        gsap.ticker.add(() => {
+            ringX += (mouseX - ringX) * 0.15;
+            ringY += (mouseY - ringY) * 0.15;
+            cursorRing.style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%, -50%)`;
+        });
+
+        // Interactive Links
+        const interactables = document.querySelectorAll('a');
+        interactables.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                gsap.to(cursorRing, { width: 60, height: 60, duration: 0.3 });
+            });
+            el.addEventListener('mouseleave', () => {
+                gsap.to(cursorRing, { width: 40, height: 40, duration: 0.3 });
+            });
+        });
+
+        // ==========================================
+        // Text Splitter for Eraser Effect
+        // ==========================================
+        const introTextContainer = document.getElementById('intro-text');
+        
+        function makeTextErasable(element) {
+            const childNodes = Array.from(element.childNodes);
+            
+            childNodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    if (!text.trim()) return; 
+                    
+                    const fragment = document.createDocumentFragment();
+                    
+                    for (let i = 0; i < text.length; i++) {
+                        const char = text[i];
+                        const span = document.createElement('span');
+                        // Ensure spaces are hardcoded so bounding box math never evaluates 0 width
+                        if (char === ' ') {
+                            span.innerHTML = '&nbsp;';
+                        } else {
+                            span.textContent = char;
+                        }
+                        span.className = 'erasable-char';
+                        erasableChars.push(span);
+                        fragment.appendChild(span);
+                    }
+                    element.replaceChild(fragment, node);
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    makeTextErasable(node);
+                }
+            });
+        }
+
+        makeTextErasable(introTextContainer);
+
+
+        // ==========================================
+        // Elite WebGL Implementation: Dodging Physics & Morph
+        // ==========================================
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        
+        const frustumSize = 120;
+        let aspect = window.innerWidth / window.innerHeight;
+        const camera = new THREE.OrthographicCamera(
+            frustumSize * aspect / -2, frustumSize * aspect / 2, 
+            frustumSize / 2, frustumSize / -2, 
+            1, 1000
+        );
+        camera.position.z = 100;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Generate text map (Using Arial to guarantee it draws universally across all systems)
+        const canvas2d = document.createElement('canvas');
+        const ctx = canvas2d.getContext('2d', { willReadFrequently: true });
+        
+        const texWidth = 800;
+        const texHeight = 300;
+        canvas2d.width = texWidth;
+        canvas2d.height = texHeight;
+
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, texWidth, texHeight);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 240px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('BNDR', texWidth / 2, texHeight / 2 + 20);
+
+        const imgData = ctx.getImageData(0, 0, texWidth, texHeight).data;
+
+        const particles = [];
+        const step = 4;
+        
+        for (let y = 0; y < texHeight; y += step) {
+            for (let x = 0; x < texWidth; x += step) {
+                const idx = (y * texWidth + x) * 4;
+                const r = imgData[idx];
+                if (r > 128) {
+                    const px = (x - texWidth / 2);
+                    const py = -(y - texHeight / 2); 
+                    particles.push({ x: px, y: py });
+                }
+            }
+        }
+
+        const particleCount = particles.length;
+        const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        
+        // Upgraded Shader: Handles Radial Dodging AND seamless Morphing
+        // Uses aBasePos attribute instead of instanceMatrix extraction to guarantee render on all GPUs
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uColor: { value: new THREE.Color('#0A1128') },
+                uMouseWorld: { value: new THREE.Vector2(0, 0) },
+                uMorphProgress: { value: 0.0 }
+            },
+            vertexShader: `
+                attribute float aMeltState;
+                attribute vec3 aRandom;
+                attribute vec3 aBasePos;
+                attribute vec3 aMorphPos;
+                
+                varying float vMelt;
+                uniform float uTime;
+                uniform vec2 uMouseWorld;
+                uniform float uMorphProgress;
+
+                void main() {
+                    vMelt = aMeltState;
+                    vec3 localOffset = vec3(0.0);
+
+                    if (aMeltState > 0.001) {
+                        // Interpolate current resting position based on morph progress
+                        vec3 currentRestPos = mix(aBasePos, aMorphPos, uMorphProgress);
+                        
+                        // Vector away from mouse
+                        vec2 toMouse = currentRestPos.xy - uMouseWorld;
+                        float dist = length(toMouse);
+                        vec2 dir = dist > 0.001 ? toMouse / dist : vec2(0.0, 1.0);
+                        
+                        // Perpendicular vector for the swirling/dodging effect
+                        vec2 tangent = vec2(-dir.y, dir.x);
+
+                        // Push particles radially outward and swirl them so they dodge each other
+                        localOffset.xy += dir * aMeltState * 35.0;
+                        localOffset.xy += tangent * aMeltState * 20.0 * sign(aRandom.x); 
+                        
+                        // Controlled drop
+                        localOffset.y -= aMeltState * 15.0; 
+                        
+                        // Z-depth push eliminates lazy 2D overlapping, weaving them together
+                        localOffset.z += aRandom.y * aMeltState * 40.0;
+                    }
+
+                    // Deformation mapping
+                    vec3 modifiedPos = position;
+                    modifiedPos.y *= (1.0 + aMeltState * 1.5);
+                    modifiedPos.x *= (1.0 - aMeltState * 0.3);
+
+                    // Interpolate between the text mark and the mathematical target shape
+                    vec3 currentWorldPos = mix(aBasePos, aMorphPos, uMorphProgress);
+
+                    // Final vertex position combines base structure + local box + interaction offset
+                    vec4 finalPos = vec4(modifiedPos + currentWorldPos + localOffset, 1.0);
+                    gl_Position = projectionMatrix * modelViewMatrix * finalPos;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 uColor;
+                varying float vMelt;
+                void main() {
+                    vec3 baseColor = uColor;
+                    vec3 meltColor = vec3(0.85, 0.42, 0.02); 
+                    vec3 finalColor = mix(baseColor, meltColor, vMelt);
+                    finalColor *= (1.0 - vMelt * 0.2); 
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `
+        });
+
+        // Disable standard matrix auto-updates since we bypass instanceMatrix entirely in the shader for safety
+        const mesh = new THREE.InstancedMesh(geometry, material, particleCount);
+        mesh.matrixAutoUpdate = false;
+        
+        const meltStates = new Float32Array(particleCount);
+        const randoms = new Float32Array(particleCount * 3);
+        const originalPositions = new Float32Array(particleCount * 3); // Upgraded to Vector3 for reliability
+        const morphPositions = new Float32Array(particleCount * 3);
+
+        const frustumWidth = frustumSize * aspect;
+        const baseScale = (frustumWidth * 0.8) / texWidth;
+        const clampedScale = Math.min(baseScale, 0.12);
+        
+        const xOffset = window.innerWidth > 768 ? 10 : 0; 
+        const goldenRatio = (1 + Math.sqrt(5)) / 2;
+
+        for (let i = 0; i < particleCount; i++) {
+            const p = particles[i];
+            const px = (p.x * clampedScale) + xOffset;
+            const py = (p.y * clampedScale) + 10; 
+
+            meltStates[i] = 0.0;
+            originalPositions[i * 3] = px;
+            originalPositions[i * 3 + 1] = py;
+            originalPositions[i * 3 + 2] = 0.0;
+
+            // Values -1.0 to 1.0 for alternating logic
+            randoms[i * 3] = (Math.random() - 0.5) * 2.0; 
+            randoms[i * 3 + 1] = (Math.random() - 0.5) * 2.0;
+            randoms[i * 3 + 2] = Math.random();
+
+            // Target Morph Shape: Mathematical Fibonacci Sphere
+            const t = i / particleCount;
+            const phi = Math.acos(1 - 2 * t);
+            const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+            const r = 45; // Expands into a clean globe
+            
+            morphPositions[i * 3] = r * Math.cos(theta) * Math.sin(phi);
+            morphPositions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
+            morphPositions[i * 3 + 2] = r * Math.cos(phi);
+        }
+
+        const meltAttribute = new THREE.InstancedBufferAttribute(meltStates, 1);
+        meltAttribute.setUsage(THREE.DynamicDrawUsage);
+        geometry.setAttribute('aMeltState', meltAttribute);
+        
+        geometry.setAttribute('aRandom', new THREE.InstancedBufferAttribute(randoms, 3));
+        
+        // Inject foolproof custom position vectors directly into memory 
+        geometry.setAttribute('aBasePos', new THREE.InstancedBufferAttribute(originalPositions, 3));
+        geometry.setAttribute('aMorphPos', new THREE.InstancedBufferAttribute(morphPositions, 3));
+
+        scene.add(mesh);
+
+        // WebGL Interaction Loop
+        const rayMouse = new THREE.Vector2(-1000, -1000);
+        const clock = new THREE.Clock();
+
+        window.addEventListener('mousemove', (e) => {
+            rayMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            rayMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                rayMouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+                rayMouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+            material.uniforms.uTime.value = elapsedTime;
+
+            const worldMouseX = rayMouse.x * (frustumSize * aspect / 2);
+            const worldMouseY = rayMouse.y * (frustumSize / 2);
+            
+            material.uniforms.uMouseWorld.value.set(worldMouseX, worldMouseY);
+
+            let attributesNeedsUpdate = false;
+            const radiusSq = 25.0 * 25.0; 
+            const currentMorph = material.uniforms.uMorphProgress.value;
+            
+            for (let i = 0; i < particleCount; i++) {
+                // Calculate physical bounds mathematically interpolated against active state
+                const px = originalPositions[i * 3] * (1.0 - currentMorph) + morphPositions[i * 3] * currentMorph;
+                const py = originalPositions[i * 3 + 1] * (1.0 - currentMorph) + morphPositions[i * 3 + 1] * currentMorph;
+                
+                const dx = px - worldMouseX;
+                const dy = py - worldMouseY;
+                const distSq = dx * dx + dy * dy;
+
+                let targetMelt = 0.0;
+
+                if (distSq < radiusSq) {
+                    targetMelt = 1.0 - (distSq / radiusSq);
+                }
+
+                const currentState = meltStates[i];
+                if (Math.abs(currentState - targetMelt) > 0.001) {
+                    const speed = targetMelt > currentState ? 0.2 : 0.03; 
+                    meltStates[i] += (targetMelt - currentState) * speed;
+                    attributesNeedsUpdate = true;
+                }
+            }
+
+            if (attributesNeedsUpdate) {
+                meltAttribute.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Responsive Resizing
+        window.addEventListener('resize', () => {
+            aspect = window.innerWidth / window.innerHeight;
+            camera.left = -frustumSize * aspect / 2;
+            camera.right = frustumSize * aspect / 2;
+            camera.top = frustumSize / 2;
+            camera.bottom = -frustumSize / 2;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ==========================================
+        // GSAP Scroll Logic & Pacing
+        // ==========================================
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.from("#intro-text", {
+            y: 20,
+            opacity: 0,
+            duration: 1,
+            ease: "power3.out",
+            delay: 0.5
+        });
+
+        gsap.to(mesh.position, {
+            y: 40,
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom top",
+                scrub: 1
+            }
+        });
+
+        ScrollTrigger.create({
+            trigger: "#trigger-dark",
+            start: "top 40%",
+            end: "bottom 60%",
+            onEnter: () => {
+                document.body.classList.add('theme-dark');
+                gsap.to(material.uniforms.uColor.value, {
+                    r: 0.95, g: 0.91, b: 0.81, 
+                    duration: 1.2
+                });
+            },
+            onLeaveBack: () => {
+                document.body.classList.remove('theme-dark');
+                gsap.to(material.uniforms.uColor.value, {
+                    r: 0.04, g: 0.07, b: 0.16, 
+                    duration: 1.2
+                });
+            },
+            onEnterBack: () => {
+                document.body.classList.add('theme-dark');
+                gsap.to(material.uniforms.uColor.value, {
+                    r: 0.95, g: 0.91, b: 0.81, duration: 1.2
+                });
+            },
+            onLeave: () => {
+                document.body.classList.remove('theme-dark');
+                gsap.to(material.uniforms.uColor.value, {
+                    r: 0.04, g: 0.07, b: 0.16, duration: 1.2
+                });
+            }
+        });
+
+        // Drives the WebGL morph animation using the ScrollTrigger
+        gsap.to(material.uniforms.uMorphProgress, {
+            value: 1.0,
+            scrollTrigger: {
+                trigger: "#trigger-dark",
+                start: "top 40%",
+                end: "bottom top",
+                scrub: 1
+            }
+        });
+
+        const revealElements = document.querySelectorAll(".gs-reveal");
+        revealElements.forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+        });
+
+    </script>
+</body>
+</html>
