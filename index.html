@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BNDR LLC | Digital Build</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -25,6 +25,8 @@
             margin: 0;
             padding: 0;
             cursor: none;
+            /* Pro-level mobile optimization: prevent native touch highlights */
+            -webkit-tap-highlight-color: transparent; 
         }
 
         body {
@@ -62,11 +64,23 @@
             transition: border-color 1.2s ease;
         }
 
+        /* Elite Mobile: Destroy custom cursors on touch devices entirely */
+        @media (pointer: coarse) {
+            .cursor-dot, .cursor-ring {
+                display: none !important;
+            }
+            * {
+                cursor: auto;
+            }
+        }
+
         /* Canvas Wrapper */
         #webgl-container {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
+            /* Fallback for iOS Safari UI bars */
+            height: 100dvh; 
             z-index: 0;
             pointer-events: auto;
         }
@@ -93,6 +107,7 @@
         /* Section 01: Silent Introduction */
         .s-intro {
             height: 100vh;
+            height: 100dvh;
             display: grid;
             grid-template-columns: 1fr 1fr;
             padding: var(--spacing-base);
@@ -105,6 +120,11 @@
             font-size: 0.95rem;
             line-height: 1.5;
             font-weight: 500;
+            
+            /* Elite Mobile: Prevent text selection while scrubbing */
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .label {
@@ -121,7 +141,9 @@
             display: inline-block;
             position: relative;
             pointer-events: none; 
-            white-space: pre; /* Force strict width for math calculation */
+            white-space: pre; 
+            /* Hardware acceleration for elite smooth rendering */
+            will-change: transform, opacity, filter;
         }
 
         /* Section 02: Transition Zone */
@@ -160,7 +182,7 @@
 
         /* Section 04: Real Contact - Production Grade Compression & Alignment */
         .s-contact {
-            padding: 5rem 2rem 3rem; 
+            padding: 4rem 2rem 2rem; /* Compressed vertical padding */
             width: 100%;
             border-top: 1px solid rgba(0,0,0,0.1);
             background: transparent;
@@ -170,10 +192,10 @@
 
         .contact-grid {
             display: grid;
-            grid-template-columns: 2fr 3fr 3fr 2fr; 
+            grid-template-columns: repeat(4, 1fr); /* Measured exactly for 4-column symmetry */
             gap: 2rem;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1000px; /* Compressed layout tracking for tight professional grouping */
             margin: 0 auto;
         }
 
@@ -225,7 +247,7 @@
             transform-origin: bottom left;
         }
 
-        /* Responsive */
+        /* Responsive Breakpoints */
         @media (max-width: 1024px) {
             .s-data {
                 grid-template-columns: 1fr;
@@ -240,6 +262,17 @@
             .contact-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 4rem 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .s-intro {
+                grid-template-columns: 1fr;
+                align-items: end;
+                padding-bottom: 15vh; /* Prevents text from sitting dead-bottom */
+            }
+            .s-intro .text-block {
+                max-width: 90%;
             }
         }
 
@@ -282,16 +315,14 @@
         </section>
 
         <!-- Triggers the morphing particle shape behind the scenes -->
-        <section class="s-statement" id="trigger-dark">
-            <!-- Blank intentional spacing -->
-        </section>
+        <section class="s-statement" id="trigger-dark"></section>
 
         <section class="s-data">
             <div class="data-block-1 gs-reveal">
-                Your site will load instantly. It will respond to input without delay. It will stand apart from the standard web.
+                Built around your business. Coded by the person you talk to. When the job is done, the work is yours.
             </div>
             <div class="data-block-2 gs-reveal">
-                We design digital objects that work correctly. Good work requires time and focus. We remove extra parts. We remove unneeded steps. You get exactly what you need.
+                Making your business easier to understand, better to look at, and less frustrating to run — whether that’s the site, the visuals, the workflow, or the stuff behind the scenes. BNDR has the tools to do it right.
             </div>
         </section>
 
@@ -314,7 +345,12 @@
                 </div>
                 <div class="contact-col">
                     <span class="c-label">Legal</span>
-                    <span class="c-value">© 2026 BNDR LLC.<br>All rights reserved.</span>
+                    <span class="c-value">
+                        © 2026 BNDR LLC.<br>
+                        All rights reserved.<br><br>
+                        <a href="https://www.dropbox.com/scl/fi/kojw24oymxcuku5r2nupj/terms.html?rlkey=zlta95mcdxzqd9qjkbk38alhl&st=t5jhc4pp&raw=" target="_blank">Terms of Service</a><br>
+                        <a href="https://www.dropbox.com/scl/fi/um6xi0vfzj0w03kgxtrq2/privacy.html?rlkey=6ylhioa276mrynqylvxc19u7v&st=iakils4n&raw=" target="_blank">Privacy Policy</a>
+                    </span>
                 </div>
             </div>
         </section>
@@ -330,14 +366,21 @@
         
         // Track touch sessions to ensure mobile toggles exactly once per swipe
         let touchSessionId = 0;
-        document.addEventListener('touchstart', () => {
+        
+        // ELITE MOBILE: Immediate zero-latency tap interception
+        document.addEventListener('touchstart', (e) => {
             touchSessionId++;
+            if (e.touches.length > 0) {
+                // Instantly trigger eraser on tap without waiting for movement
+                handleEraser(e.touches[0].clientX, e.touches[0].clientY, false, true);
+            }
         }, {passive: true});
 
         function handleEraser(x, y, isClicking, isMobile) {
             if (y >= window.innerHeight) return; 
 
-            const eraserRadius = 40; 
+            // Expanded radius exclusively for touch devices (human fat-finger compensation)
+            const eraserRadius = isMobile ? 65 : 40; 
             const radiusSq = eraserRadius * eraserRadius;
 
             for (let i = 0; i < erasableChars.length; i++) {
@@ -372,7 +415,7 @@
                     } else {
                         // Desktop: Hover = erase, Click+Drag = un-erase
                         willErase = !isClicking;
-                        if (willErase === isErased) continue; // Already in target state
+                        if (willErase === isErased) continue; 
                     }
 
                     span.dataset.erased = willErase ? "true" : "false";
@@ -489,11 +532,11 @@
         camera.position.z = 100;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        // Elite standard: Cap DPR at 2x. Prevents extreme GPU overhead on modern iPhones while maintaining crisp edges.
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        // Generate text map (Using Arial to guarantee it draws universally across all systems)
         const canvas2d = document.createElement('canvas');
         const ctx = canvas2d.getContext('2d', { willReadFrequently: true });
         
@@ -531,8 +574,6 @@
         const particleCount = particles.length;
         const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
         
-        // Upgraded Shader: Handles Radial Dodging AND seamless Morphing
-        // Uses aBasePos attribute instead of instanceMatrix extraction to guarantee render on all GPUs
         const material = new THREE.ShaderMaterial({
             uniforms: {
                 uTime: { value: 0 },
@@ -556,37 +597,28 @@
                     vec3 localOffset = vec3(0.0);
 
                     if (aMeltState > 0.001) {
-                        // Interpolate current resting position based on morph progress
                         vec3 currentRestPos = mix(aBasePos, aMorphPos, uMorphProgress);
                         
-                        // Vector away from mouse
                         vec2 toMouse = currentRestPos.xy - uMouseWorld;
                         float dist = length(toMouse);
                         vec2 dir = dist > 0.001 ? toMouse / dist : vec2(0.0, 1.0);
                         
-                        // Perpendicular vector for the swirling/dodging effect
                         vec2 tangent = vec2(-dir.y, dir.x);
 
-                        // Push particles radially outward and swirl them so they dodge each other
                         localOffset.xy += dir * aMeltState * 35.0;
                         localOffset.xy += tangent * aMeltState * 20.0 * sign(aRandom.x); 
                         
-                        // Controlled drop
                         localOffset.y -= aMeltState * 15.0; 
                         
-                        // Z-depth push eliminates lazy 2D overlapping, weaving them together
                         localOffset.z += aRandom.y * aMeltState * 40.0;
                     }
 
-                    // Deformation mapping
                     vec3 modifiedPos = position;
                     modifiedPos.y *= (1.0 + aMeltState * 1.5);
                     modifiedPos.x *= (1.0 - aMeltState * 0.3);
 
-                    // Interpolate between the text mark and the mathematical target shape
                     vec3 currentWorldPos = mix(aBasePos, aMorphPos, uMorphProgress);
 
-                    // Final vertex position combines base structure + local box + interaction offset
                     vec4 finalPos = vec4(modifiedPos + currentWorldPos + localOffset, 1.0);
                     gl_Position = projectionMatrix * modelViewMatrix * finalPos;
                 }
@@ -604,13 +636,12 @@
             `
         });
 
-        // Disable standard matrix auto-updates since we bypass instanceMatrix entirely in the shader for safety
         const mesh = new THREE.InstancedMesh(geometry, material, particleCount);
         mesh.matrixAutoUpdate = false;
         
         const meltStates = new Float32Array(particleCount);
         const randoms = new Float32Array(particleCount * 3);
-        const originalPositions = new Float32Array(particleCount * 3); // Upgraded to Vector3 for reliability
+        const originalPositions = new Float32Array(particleCount * 3); 
         const morphPositions = new Float32Array(particleCount * 3);
 
         const frustumWidth = frustumSize * aspect;
@@ -618,7 +649,10 @@
         const clampedScale = Math.min(baseScale, 0.12);
         
         const xOffset = window.innerWidth > 768 ? 10 : 0; 
-        const goldenRatio = (1 + Math.sqrt(5)) / 2;
+        
+        // Elite Mobile Optimization: Dynamically calculate the sphere radius based on screen width
+        // This mathematically ensures the shape never bleeds off the edges of narrow phones
+        const morphRadius = Math.min(frustumWidth * 0.4, 45); 
 
         for (let i = 0; i < particleCount; i++) {
             const p = particles[i];
@@ -630,20 +664,17 @@
             originalPositions[i * 3 + 1] = py;
             originalPositions[i * 3 + 2] = 0.0;
 
-            // Values -1.0 to 1.0 for alternating logic
             randoms[i * 3] = (Math.random() - 0.5) * 2.0; 
             randoms[i * 3 + 1] = (Math.random() - 0.5) * 2.0;
             randoms[i * 3 + 2] = Math.random();
 
-            // Target Morph Shape: Mathematical Fibonacci Sphere
             const t = i / particleCount;
             const phi = Math.acos(1 - 2 * t);
             const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-            const r = 45; // Expands into a clean globe
             
-            morphPositions[i * 3] = r * Math.cos(theta) * Math.sin(phi);
-            morphPositions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
-            morphPositions[i * 3 + 2] = r * Math.cos(phi);
+            morphPositions[i * 3] = morphRadius * Math.cos(theta) * Math.sin(phi);
+            morphPositions[i * 3 + 1] = morphRadius * Math.sin(theta) * Math.sin(phi);
+            morphPositions[i * 3 + 2] = morphRadius * Math.cos(phi);
         }
 
         const meltAttribute = new THREE.InstancedBufferAttribute(meltStates, 1);
@@ -651,8 +682,6 @@
         geometry.setAttribute('aMeltState', meltAttribute);
         
         geometry.setAttribute('aRandom', new THREE.InstancedBufferAttribute(randoms, 3));
-        
-        // Inject foolproof custom position vectors directly into memory 
         geometry.setAttribute('aBasePos', new THREE.InstancedBufferAttribute(originalPositions, 3));
         geometry.setAttribute('aMorphPos', new THREE.InstancedBufferAttribute(morphPositions, 3));
 
@@ -663,17 +692,35 @@
         const clock = new THREE.Clock();
 
         window.addEventListener('mousemove', (e) => {
-            // Keep rayMouse independent for WebGL physics
             rayMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             rayMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // We bind touchmove logic directly to window for WebGL interaction tracking
+        // ELITE MOBILE: Sync WebGL interaction immediately on tap for zero-latency dodge
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                rayMouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+                rayMouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+            }
+        }, {passive: true});
+
         window.addEventListener('touchmove', (e) => {
             if (e.touches.length > 0) {
                 rayMouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
                 rayMouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
             }
+        }, {passive: true});
+
+        // ELITE MOBILE: Clear interaction point when finger leaves so particles organically rest
+        window.addEventListener('touchend', () => {
+            rayMouse.x = -1000;
+            rayMouse.y = -1000;
+        }, {passive: true});
+
+        // Clear interaction when mouse leaves desktop window
+        document.addEventListener('mouseleave', () => {
+            rayMouse.x = -1000;
+            rayMouse.y = -1000;
         });
 
         function animate() {
@@ -692,7 +739,6 @@
             const currentMorph = material.uniforms.uMorphProgress.value;
             
             for (let i = 0; i < particleCount; i++) {
-                // Calculate physical bounds mathematically interpolated against active state
                 const px = originalPositions[i * 3] * (1.0 - currentMorph) + morphPositions[i * 3] * currentMorph;
                 const py = originalPositions[i * 3 + 1] * (1.0 - currentMorph) + morphPositions[i * 3 + 1] * currentMorph;
                 
