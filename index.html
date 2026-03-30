@@ -327,36 +327,57 @@
         let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
         let ringX = mouseX, ringY = mouseY;
         const erasableChars = [];
+        
+        // Track touch sessions to ensure mobile toggles exactly once per swipe
+        let touchSessionId = 0;
+        document.addEventListener('touchstart', () => {
+            touchSessionId++;
+        }, {passive: true});
 
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            cursorDot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+        function handleEraser(x, y, isClicking, isMobile) {
+            if (y >= window.innerHeight) return; 
 
-            // Flawless math-based eraser logic
-            if (mouseY < window.innerHeight) { 
-                const eraserRadius = 40; // Size of interaction
-                const radiusSq = eraserRadius * eraserRadius;
+            const eraserRadius = 40; 
+            const radiusSq = eraserRadius * eraserRadius;
 
-                for (let i = 0; i < erasableChars.length; i++) {
-                    const span = erasableChars[i];
-                    if (span.dataset.erased) continue;
+            for (let i = 0; i < erasableChars.length; i++) {
+                const span = erasableChars[i];
+                const isErased = span.dataset.erased === "true";
 
-                    const rect = span.getBoundingClientRect();
-                    
-                    // Fast AABB check to save performance
-                    if (mouseX < rect.left - eraserRadius || mouseX > rect.right + eraserRadius ||
-                        mouseY < rect.top - eraserRadius || mouseY > rect.bottom + eraserRadius) {
-                        continue;
+                // On mobile, only allow one toggle per swipe session to prevent flickering
+                if (isMobile && span.dataset.lastSession == touchSessionId) {
+                    continue;
+                }
+
+                const rect = span.getBoundingClientRect();
+                
+                // Fast AABB check to save performance
+                if (x < rect.left - eraserRadius || x > rect.right + eraserRadius ||
+                    y < rect.top - eraserRadius || y > rect.bottom + eraserRadius) {
+                    continue;
+                }
+
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const dx = cx - x;
+                const dy = cy - y;
+
+                if (dx * dx + dy * dy < radiusSq) {
+                    let willErase;
+
+                    if (isMobile) {
+                        // Mobile: passing over toggles the state
+                        willErase = !isErased;
+                        span.dataset.lastSession = touchSessionId;
+                    } else {
+                        // Desktop: Hover = erase, Click+Drag = un-erase
+                        willErase = !isClicking;
+                        if (willErase === isErased) continue; // Already in target state
                     }
 
-                    const cx = rect.left + rect.width / 2;
-                    const cy = rect.top + rect.height / 2;
-                    const dx = cx - mouseX;
-                    const dy = cy - mouseY;
+                    span.dataset.erased = willErase ? "true" : "false";
 
-                    if (dx * dx + dy * dy < radiusSq) {
-                        span.dataset.erased = "true";
+                    if (willErase) {
                         gsap.to(span, { 
                             opacity: 0, 
                             filter: "blur(6px)", 
@@ -366,10 +387,36 @@
                             ease: "power2.out",
                             overwrite: true 
                         });
+                    } else {
+                        gsap.to(span, { 
+                            opacity: 1, 
+                            filter: "blur(0px)", 
+                            y: 0,
+                            scale: 1,
+                            duration: 0.4, 
+                            ease: "power2.out",
+                            overwrite: true 
+                        });
                     }
                 }
             }
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorDot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+
+            // isClicking checks if primary mouse button is held down
+            const isClicking = (e.buttons & 1) === 1;
+            handleEraser(mouseX, mouseY, isClicking, false);
         });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handleEraser(e.touches[0].clientX, e.touches[0].clientY, false, true);
+            }
+        }, {passive: true});
 
         gsap.ticker.add(() => {
             ringX += (mouseX - ringX) * 0.15;
@@ -616,10 +663,12 @@
         const clock = new THREE.Clock();
 
         window.addEventListener('mousemove', (e) => {
+            // Keep rayMouse independent for WebGL physics
             rayMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             rayMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
+        // We bind touchmove logic directly to window for WebGL interaction tracking
         window.addEventListener('touchmove', (e) => {
             if (e.touches.length > 0) {
                 rayMouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
